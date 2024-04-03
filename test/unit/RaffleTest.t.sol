@@ -33,6 +33,7 @@ contract RaffleTest is Test {
         DeployRaffle deployer = new DeployRaffle(); // our deployRaffle is going to be a new instance of the deployRaffle contract, which deploys both raffle and helperConfig.
         // When we run the deployer, we need to pass in the constructor parameters that were present in our deployRaffle contract, deployRaffle took constructor from the helperConfig.
         (raffle, helperConfig) = deployer.run();
+        vm.deal(PLAYER, START_USER_BALANCE);
         // When I see .run, it is returning two values, those two values are being returned to the variables raffle and helperConfig respectively.
         (
             entranceFee,
@@ -44,7 +45,6 @@ contract RaffleTest is Test {
             link,
 
         ) = helperConfig.activeNetworkConfig(); // we are going to get the active network config from the helperConfig contract, and we are going to deconstruct the network config into the underlying parameters
-        vm.deal(PLAYER, START_USER_BALANCE);
     }
 
     function testRaffleInitializeInOpenState() public view {
@@ -146,7 +146,7 @@ contract RaffleTest is Test {
     }
 
     function testPerformUpkeepRevertIfCheckUpkeepIsFalse() public {
-        uint256 currentBalance = 0;
+        uint256 currentBalance = address(raffle).balance;
         uint256 numPlayers = 0;
         uint256 raffleState = 0; // we know based on our numerical values on what open and closed mean
         vm.expectRevert(
@@ -207,6 +207,7 @@ contract RaffleTest is Test {
     function testFufillRandomWordsPicksaWinnerResetsAndSendsMoney()
         public
         raffleEnteredAndTimePassed
+        skipFork
     {
         // arrange
         uint256 additionalEntrants = 5;
@@ -222,6 +223,7 @@ contract RaffleTest is Test {
         }
 
         uint256 prize = entranceFee * (additionalEntrants + 1);
+
         vm.recordLogs(); // automatically saves all the log outputs
         raffle.performUpkeep(""); // emit requestId
         Vm.Log[] memory entries = vm.getRecordedLogs();
